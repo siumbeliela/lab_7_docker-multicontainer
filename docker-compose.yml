@@ -1,0 +1,26 @@
+version: "3.8"
+
+services:
+  web-app:
+    build:
+      context: ./html
+    container_name: html_container
+    ports:
+      - "8080:80"
+    depends_on:
+      - css-server
+      - images-server
+
+  css-server:
+    build:
+      context: ./css
+    container_name: css_container
+    ports:
+      - "8081:80"
+
+  images-server:
+    build:
+      context: ./assets
+    container_name: assets_container
+    ports:
+      - "8082:80"

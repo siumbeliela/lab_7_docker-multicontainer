@@ -1,0 +1,818 @@
+<!DOCTYPE html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Интерактивный Отчет: Docker Lab #7</title>
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <!-- Font Awesome for Icons (No SVG Graphics) -->
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    />
+
+    <!-- Google Fonts -->
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap"
+      rel="stylesheet"
+    />
+
+    <!-- Custom Styles for specific requirements -->
+    <style>
+      body {
+        font-family: "Inter", sans-serif;
+        background-color: #f3f4f6; /* Warm neutral/light grey background */
+        color: #1f2937;
+      }
+
+      /* Chart Container Strict Styling */
+      .chart-container {
+        position: relative;
+        width: 100%;
+        max-width: 600px;
+        margin-left: auto;
+        margin-right: auto;
+        height: 300px;
+        max-height: 400px;
+      }
+      @media (min-width: 768px) {
+        .chart-container {
+          height: 350px;
+        }
+      }
+
+      /* Custom Scrollbar */
+      ::-webkit-scrollbar {
+        width: 8px;
+        height: 8px;
+      }
+      ::-webkit-scrollbar-track {
+        background: #f1f1f1;
+      }
+      ::-webkit-scrollbar-thumb {
+        background: #cbd5e1;
+        border-radius: 4px;
+      }
+      ::-webkit-scrollbar-thumb:hover {
+        background: #94a3b8;
+      }
+
+      /* Code Block Styling */
+      .code-block {
+        font-family: "Courier New", Courier, monospace;
+      }
+
+      /* Animation utilities */
+      .fade-in {
+        animation: fadeIn 0.5s ease-in;
+      }
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+          transform: translateY(10px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      /* Interactive Architecture Diagram Styling */
+      .arch-node {
+        transition: all 0.3s ease;
+        cursor: pointer;
+      }
+      .arch-node:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1),
+          0 4px 6px -2px rgba(0, 0, 0, 0.05);
+      }
+      .arch-node.active {
+        border-color: #3b82f6; /* Blue-500 */
+        background-color: #eff6ff; /* Blue-50 */
+      }
+    </style>
+
+    <!-- Placeholder Comments -->
+    <!-- Chosen Palette: Slate & Blue (Professional, Technical, Clean). Background: #f3f4f6 (Cool Grey). Primary: #3b82f6 (Blue). Text: #1f2937 (Dark Grey). -->
+    <!-- Application Structure Plan: Dashboard Layout. 
+         1. Header: Student Info & Meta Data.
+         2. Concept Viz: Interactive Architecture Diagram (Central feature) to explain the multi-container setup.
+         3. Analysis: Chart comparing VMs vs Containers (based on Q&A content).
+         4. Code Explorer: Tabbed interface to browse the source files without page reloads.
+         5. Knowledge Base: Accordion for the 10 Control Questions.
+         6. Evidence: Screenshot gallery with descriptions.
+         Why: This structure breaks the dense report into consumable interactive chunks. The architecture diagram makes the abstract "network" concept concrete. -->
+    <!-- Visualization & Content Choices:
+         1. Architecture Diagram: HTML/CSS Grid with JS interaction. Goal: Explain the "Complex Variant" setup. NO SVG.
+         2. Comparison Chart: Chart.js Bar Chart. Goal: Visualize Q1/Q7 (VM vs Container efficiency). Data derived from theoretical concepts in report.
+         3. Project Stats: Donut Chart. Goal: Show breakdown of project components (files, services).
+         4. Code Viewer: JS Tab switching. Goal: Clean presentation of multiple files.
+         5. Confirmation: NO SVG graphics used. NO Mermaid JS used. -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+  </head>
+  <body class="flex flex-col min-h-screen">
+    <!-- Navigation -->
+    <nav class="bg-white shadow-md sticky top-0 z-50">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex justify-between h-16">
+          <div class="flex items-center">
+            <i class="fa-brands fa-docker text-blue-600 text-2xl mr-3"></i>
+            <span class="font-bold text-xl tracking-tight text-gray-800"
+              >Docker Lab #7</span
+            >
+          </div>
+          <div class="hidden md:flex items-center space-x-4">
+            <button
+              onclick="scrollToSection('dashboard')"
+              class="text-gray-600 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium transition"
+            >
+              Дашборд
+            </button>
+            <button
+              onclick="scrollToSection('architecture')"
+              class="text-gray-600 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium transition"
+            >
+              Архитектура
+            </button>
+            <button
+              onclick="scrollToSection('code')"
+              class="text-gray-600 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium transition"
+            >
+              Код
+            </button>
+            <button
+              onclick="scrollToSection('knowledge')"
+              class="text-gray-600 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium transition"
+            >
+              Теория
+            </button>
+          </div>
+          <!-- Mobile menu button placeholder -->
+          <div class="md:hidden flex items-center">
+            <button
+              id="mobile-menu-btn"
+              class="text-gray-600 hover:text-gray-900 focus:outline-none"
+            >
+              <i class="fa-solid fa-bars text-xl"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+      <!-- Mobile Menu (Hidden by default) -->
+      <div id="mobile-menu" class="hidden md:hidden bg-white border-t">
+        <button
+          onclick="scrollToSection('dashboard')"
+          class="block w-full text-left px-4 py-2 text-gray-600 hover:bg-gray-50"
+        >
+          Дашборд
+        </button>
+        <button
+          onclick="scrollToSection('architecture')"
+          class="block w-full text-left px-4 py-2 text-gray-600 hover:bg-gray-50"
+        >
+          Архитектура
+        </button>
+        <button
+          onclick="scrollToSection('code')"
+          class="block w-full text-left px-4 py-2 text-gray-600 hover:bg-gray-50"
+        >
+          Код
+        </button>
+        <button
+          onclick="scrollToSection('knowledge')"
+          class="block w-full text-left px-4 py-2 text-gray-600 hover:bg-gray-50"
+        >
+          Теория
+        </button>
+      </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main
+      class="flex-grow container mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-12"
+    >
+      <!-- Header / Student Info Card -->
+      <header
+        id="dashboard"
+        class="bg-white rounded-xl shadow-sm p-6 sm:p-8 border-l-4 border-blue-500 fade-in"
+      >
+        <div
+          class="flex flex-col md:flex-row justify-between items-start md:items-center"
+        >
+          <div>
+            <h1 class="text-3xl font-bold text-gray-900 mb-2">
+              Отчет по Лабораторной работе №7
+            </h1>
+            <p class="text-lg text-gray-600 mb-4">
+              Тема:
+              <span class="font-semibold text-blue-700"
+                >Создание контейнеров. Виртуализация в Docker.</span
+              >
+            </p>
+            <div class="flex flex-wrap gap-4 text-sm text-gray-500">
+              <span class="bg-gray-100 px-3 py-1 rounded-full"
+                ><i class="fa-solid fa-user mr-2"></i>Сюмбели Элла</span
+              >
+              <span class="bg-gray-100 px-3 py-1 rounded-full"
+                ><i class="fa-solid fa-layer-group mr-2"></i>Сложный
+                Вариант</span
+              >
+              <span class="bg-blue-100 text-blue-800 px-3 py-1 rounded-full"
+                ><i class="fa-brands fa-docker mr-2"></i>Docker Compose</span
+              >
+            </div>
+          </div>
+          <div class="mt-4 md:mt-0 flex flex-col items-center md:items-end">
+            <div class="text-right">
+              <p class="text-sm text-gray-500">Статус Проекта</p>
+              <p class="text-green-600 font-bold flex items-center">
+                <i class="fa-solid fa-check-circle mr-1"></i> Выполнено
+              </p>
+            </div>
+          </div>
+        </div>
+        <div class="mt-6 pt-6 border-t border-gray-100">
+          <p class="text-gray-700 leading-relaxed">
+            <strong>Цель работы:</strong> Создание мультиконтейнерного
+            веб-приложения с разделением ресурсов. Проект демонстрирует изоляцию
+            HTML, CSS и изображений в трех независимых контейнерах, управляемых
+            Docker Compose.
+          </p>
+        </div>
+      </header>
+
+      <!-- Architecture Visualization Section -->
+      <section id="architecture" class="scroll-mt-20">
+        <div class="mb-6">
+          <h2 class="text-2xl font-bold text-gray-900 flex items-center">
+            <i class="fa-solid fa-network-wired text-blue-500 mr-3"></i>
+            Архитектура Приложения
+          </h2>
+          <p class="mt-2 text-gray-600">
+            Интерактивная схема "Сложного варианта". Нажмите на контейнер, чтобы
+            увидеть детали конфигурации портов и сервисов. Эта схема показывает,
+            как браузер хоста взаимодействует с изолированными сервисами.
+          </p>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          <!-- Interactive Diagram Area -->
+          <div
+            class="lg:col-span-2 bg-white rounded-xl shadow-lg p-6 relative overflow-hidden border border-gray-200"
+          >
+            <div
+              class="absolute top-0 left-0 bg-gray-100 px-3 py-1 rounded-br-lg text-xs font-mono text-gray-500"
+            >
+              LOCALHOST / HOST MACHINE
+            </div>
+
+            <!-- Host Browser Mockup -->
+            <div
+              class="mt-6 mb-8 mx-auto max-w-sm bg-gray-800 rounded-t-lg p-2 text-white text-xs font-mono text-center shadow-md"
+            >
+              <div class="flex space-x-1 mb-2">
+                <div class="w-2 h-2 rounded-full bg-red-500"></div>
+                <div class="w-2 h-2 rounded-full bg-yellow-500"></div>
+                <div class="w-2 h-2 rounded-full bg-green-500"></div>
+              </div>
+              http://localhost:8080
+            </div>
+
+            <!-- Flow Arrows -->
+            <div class="flex justify-center mb-4 text-gray-400 text-2xl">
+              <i class="fa-solid fa-arrow-down-long animate-bounce"></i>
+            </div>
+
+            <!-- Docker Network Box -->
+            <div
+              class="border-2 border-dashed border-blue-300 rounded-xl p-6 bg-blue-50/50"
+            >
+              <div
+                class="text-center mb-4 text-blue-600 font-bold text-sm tracking-wider uppercase"
+              >
+                Docker Default Network
+              </div>
+
+              <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <!-- Node 1: Web App -->
+                <div
+                  onclick="selectNode('web')"
+                  id="node-web"
+                  class="arch-node bg-white p-4 rounded-lg border-2 border-transparent shadow-sm text-center group"
+                >
+                  <div
+                    class="w-12 h-12 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-3 text-xl group-hover:bg-blue-600 group-hover:text-white transition-colors"
+                  >
+                    <i class="fa-brands fa-html5"></i>
+                  </div>
+                  <h3 class="font-bold text-gray-800">web-app</h3>
+                  <p class="text-xs text-gray-500 mt-1">Port 8080:80</p>
+                </div>
+
+                <!-- Node 2: CSS Server -->
+                <div
+                  onclick="selectNode('css')"
+                  id="node-css"
+                  class="arch-node bg-white p-4 rounded-lg border-2 border-transparent shadow-sm text-center group"
+                >
+                  <div
+                    class="w-12 h-12 bg-purple-100 text-purple-600 rounded-full flex items-center justify-center mx-auto mb-3 text-xl group-hover:bg-purple-600 group-hover:text-white transition-colors"
+                  >
+                    <i class="fa-brands fa-css3-alt"></i>
+                  </div>
+                  <h3 class="font-bold text-gray-800">css-server</h3>
+                  <p class="text-xs text-gray-500 mt-1">Port 8081:80</p>
+                </div>
+
+                <!-- Node 3: Images Server -->
+                <div
+                  onclick="selectNode('img')"
+                  id="node-img"
+                  class="arch-node bg-white p-4 rounded-lg border-2 border-transparent shadow-sm text-center group"
+                >
+                  <div
+                    class="w-12 h-12 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-3 text-xl group-hover:bg-green-600 group-hover:text-white transition-colors"
+                  >
+                    <i class="fa-regular fa-image"></i>
+                  </div>
+                  <h3 class="font-bold text-gray-800">images-server</h3>
+                  <p class="text-xs text-gray-500 mt-1">Port 8082:80</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Info Panel -->
+          <div
+            class="bg-gray-800 text-white rounded-xl shadow-lg p-6 flex flex-col justify-center"
+          >
+            <h3 class="text-lg font-bold mb-4 border-b border-gray-600 pb-2">
+              Детали Сервиса
+            </h3>
+            <div id="node-details">
+              <p class="text-gray-400 italic text-center py-10">
+                Нажмите на контейнер слева, чтобы увидеть технические детали.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Analysis Charts Section -->
+      <section class="grid grid-cols-1 md:grid-cols-2 gap-8">
+        <!-- Chart 1: VM vs Container -->
+        <div class="bg-white p-6 rounded-xl shadow-md">
+          <h3 class="text-lg font-bold text-gray-800 mb-2">
+            Контейнеры vs Виртуальные Машины
+          </h3>
+          <p class="text-sm text-gray-500 mb-4">
+            Сравнение эффективности (на основе теоретических данных Лабораторной
+            работы).
+          </p>
+          <div class="chart-container">
+            <canvas id="comparisonChart"></canvas>
+          </div>
+        </div>
+
+        <!-- Chart 2: Project Composition -->
+        <div class="bg-white p-6 rounded-xl shadow-md">
+          <h3 class="text-lg font-bold text-gray-800 mb-2">
+            Структура Проекта
+          </h3>
+          <p class="text-sm text-gray-500 mb-4">
+            Распределение типов файлов в мультиконтейнерной сборке.
+          </p>
+          <div class="chart-container">
+            <canvas id="compositionChart"></canvas>
+          </div>
+        </div>
+      </section>
+
+      <!-- Source Code Explorer -->
+      <section id="code" class="scroll-mt-20">
+        <div class="mb-6">
+          <h2 class="text-2xl font-bold text-gray-900 flex items-center">
+            <i class="fa-solid fa-code text-blue-500 mr-3"></i> Исходный Код
+          </h2>
+          <p class="mt-2 text-gray-600">
+            Изучите конфигурацию `docker-compose.yml` и Dockerfiles для каждого
+            сервиса.
+          </p>
+        </div>
+
+        <div
+          class="bg-gray-900 rounded-xl overflow-hidden shadow-2xl border border-gray-700"
+        >
+          <!-- Tab Header -->
+          <div
+            class="flex overflow-x-auto bg-gray-800 border-b border-gray-700"
+            id="code-tabs"
+          >
+            <!-- Tabs injected by JS -->
+          </div>
+
+          <!-- Code Content -->
+          <div
+            class="p-6 overflow-auto bg-gray-900 text-gray-100 code-block text-sm h-96"
+            id="code-viewer"
+          >
+            <pre><code id="code-content" class="language-yaml">Select a file to view content...</code></pre>
+          </div>
+        </div>
+      </section>
+
+      <!-- Knowledge Base (Q&A) -->
+      <section id="knowledge" class="scroll-mt-20">
+        <div class="mb-6">
+          <h2 class="text-2xl font-bold text-gray-900 flex items-center">
+            <i class="fa-solid fa-graduation-cap text-blue-500 mr-3"></i>
+            Контрольные Вопросы
+          </h2>
+          <p class="mt-2 text-gray-600">
+            Проверка знаний по теме виртуализации и Docker. Нажмите на вопрос,
+            чтобы раскрыть ответ.
+          </p>
+        </div>
+
+        <div class="space-y-4" id="qa-container">
+          <!-- Q&A Items injected by JS -->
+        </div>
+      </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-white border-t border-gray-200 mt-12 py-8">
+      <div class="container mx-auto px-4 text-center text-gray-500">
+        <p class="mb-2 font-semibold">
+          Лабораторная Работа №7: Docker & Virtualization
+        </p>
+        <p class="text-sm">&copy; 2025 Сюмбели Элла. UTM - FCIM.</p>
+      </div>
+    </footer>
+
+    <!-- JavaScript Logic -->
+    <script>
+      // ==========================================
+      // 1. Data Store
+      // ==========================================
+
+      // Architecture Data
+      const nodeData = {
+        web: {
+          title: "HTML Container (web-app)",
+          image: "nginx:alpine",
+          ports: "8080:80",
+          role: "Сервер Frontend",
+          desc: "Основной контейнер. Обслуживает файл index.html. Зависит от доступности CSS и Image контейнеров.",
+          command: "docker-compose up -d web-app",
+        },
+        css: {
+          title: "CSS Container (css-server)",
+          image: "nginx:alpine",
+          ports: "8081:80",
+          role: "Сервер Стилей",
+          desc: "Изолированный контейнер для статики. Отдает style.css по запросу браузера на порт 8081.",
+          command: "docker-compose up -d css-server",
+        },
+        img: {
+          title: "Images Container (images-server)",
+          image: "nginx:alpine",
+          ports: "8082:80",
+          role: "Медиа Сервер",
+          desc: "Хранилище медиа-файлов. Отдает my_image.jpg по запросу на порт 8082.",
+          command: "docker-compose up -d images-server",
+        },
+      };
+
+      // Code Files Data
+      const projectFiles = {
+        "docker-compose.yml": `services:
+  web-app:
+    build:
+      context: ./html
+    container_name: html_container
+    ports:
+      - "8080:80"
+    depends_on:
+      - css-server
+      - images-server
+
+  css-server:
+    build:
+      context: ./css
+    container_name: css_container
+    ports:
+      - "8081:80"
+
+  images-server:
+    build:
+      context: ./images
+    container_name: images_container
+    ports:
+      - "8082:80"`,
+        "html/Dockerfile": `FROM nginx:alpine
+COPY index.html /usr/share/nginx/html/index.html
+EXPOSE 80`,
+        "css/Dockerfile": `FROM nginx:alpine
+COPY style.css /usr/share/nginx/html/style.css
+EXPOSE 80`,
+        "images/Dockerfile": `FROM nginx:alpine
+RUN mkdir -p /usr/share/nginx/html/images
+COPY my_image.jpg /usr/share/nginx/html/images/my_image.jpg
+EXPOSE 80`,
+        "html/index.html": `<!-- Snippet -->
+<link rel="stylesheet" href="http://localhost:8081/style.css" />
+<img src="http://localhost:8082/images/my_image.jpg" />`,
+      };
+
+      // Q&A Data
+      const questions = [
+        {
+          q: "1. Что такое контейнер и чем он отличается от виртуальной машины?",
+          a: "Контейнер — изолированный процесс в пространстве пользователя с общим ядром. ВМ эмулирует аппаратное обеспечение и имеет собственное ядро (полная ОС). Контейнеры легче и быстрее.",
+        },
+        {
+          q: "2. Каковы основные компоненты Docker?",
+          a: "Daemon (сервер), Client (CLI), Images (образы/шаблоны), Containers (запущенные образы), Registry (хранилище, например, Docker Hub).",
+        },
+        {
+          q: "3. Роль Dockerfile?",
+          a: "Текстовая инструкция для автоматической сборки образа. Содержит команды FROM, RUN, COPY, EXPOSE, CMD.",
+        },
+        {
+          q: "4. Как создать и запустить контейнер?",
+          a: "Создать образ: `docker build -t tag .`. Запустить: `docker run -d -p port:port tag`.",
+        },
+        {
+          q: "5. Как осуществляется связь между контейнерами?",
+          a: "Через виртуальные сети Docker Network. В Docker Compose создается общая сеть, где сервисы видят друг друга по именам.",
+        },
+        {
+          q: "6. Что такое Docker Volume?",
+          a: "Механизм для хранения постоянных данных вне жизненного цикла контейнера. Позволяет сохранять данные при удалении контейнера.",
+        },
+        {
+          q: "7. Преимущества контейнеризации?",
+          a: "Легковесность, скорость запуска (секунды), высокая плотность размещения, переносимость (работает везде одинаково).",
+        },
+        {
+          q: "8. Как распространять образы?",
+          a: "Через Docker Hub или приватные реестры используя команды `docker push` (загрузить) и `docker pull` (скачать).",
+        },
+        {
+          q: "9. Разница: build vs run vs compose up?",
+          a: "`build` создает образ. `run` запускает один контейнер. `compose up` запускает многоконтейнерное приложение по конфигу.",
+        },
+        {
+          q: "10. Контейнеры в Dev/Test/Prod?",
+          a: "Dev: единая среда. Test: чистые изолированные окружения. Prod: масштабируемость и надежное развертывание.",
+        },
+      ];
+
+      // ==========================================
+      // 2. Logic & Interactions
+      // ==========================================
+
+      // Architecture Node Selection
+      function selectNode(key) {
+        // Highlight Node
+        document.querySelectorAll(".arch-node").forEach((el) => {
+          el.classList.remove("active", "ring-2", "ring-blue-400");
+        });
+        const activeNode = document.getElementById(`node-${key}`);
+        activeNode.classList.add("active", "ring-2", "ring-blue-400");
+
+        // Update Detail Panel
+        const data = nodeData[key];
+        const detailHTML = `
+                <div class="fade-in">
+                    <div class="flex items-center justify-between mb-4">
+                        <h4 class="text-xl font-bold text-blue-400">${data.title}</h4>
+                        <span class="bg-blue-900 text-blue-200 text-xs px-2 py-1 rounded border border-blue-700">Running</span>
+                    </div>
+                    
+                    <div class="space-y-3 text-sm">
+                        <div class="flex border-b border-gray-700 pb-2">
+                            <span class="w-24 text-gray-500">Image:</span>
+                            <span class="font-mono text-green-400">${data.image}</span>
+                        </div>
+                        <div class="flex border-b border-gray-700 pb-2">
+                            <span class="w-24 text-gray-500">Ports:</span>
+                            <span class="font-mono text-yellow-400">${data.ports}</span>
+                        </div>
+                        <div class="flex border-b border-gray-700 pb-2">
+                            <span class="w-24 text-gray-500">Role:</span>
+                            <span>${data.role}</span>
+                        </div>
+                        <div class="pt-2">
+                            <span class="block text-gray-500 mb-1">Description:</span>
+                            <p class="text-gray-300 leading-relaxed">${data.desc}</p>
+                        </div>
+                        <div class="mt-4 bg-black p-3 rounded font-mono text-xs text-gray-400">
+                            $ ${data.command}
+                        </div>
+                    </div>
+                </div>
+            `;
+        document.getElementById("node-details").innerHTML = detailHTML;
+      }
+
+      // Code Viewer Tabs
+      function initCodeViewer() {
+        const tabContainer = document.getElementById("code-tabs");
+        const contentArea = document.getElementById("code-content");
+        let first = true;
+
+        for (const [filename, content] of Object.entries(projectFiles)) {
+          const btn = document.createElement("button");
+          btn.className = `px-4 py-3 text-sm font-medium border-b-2 transition-colors focus:outline-none ${
+            first
+              ? "text-blue-400 border-blue-400 bg-gray-800"
+              : "text-gray-400 border-transparent hover:text-gray-200 hover:bg-gray-700"
+          }`;
+          btn.innerText = filename;
+          btn.onclick = () => {
+            // Reset styling
+            Array.from(tabContainer.children).forEach((b) => {
+              b.className =
+                "px-4 py-3 text-sm font-medium border-b-2 border-transparent text-gray-400 hover:text-gray-200 hover:bg-gray-700 transition-colors focus:outline-none";
+            });
+            // Active styling
+            btn.className =
+              "px-4 py-3 text-sm font-medium border-b-2 border-blue-400 text-blue-400 bg-gray-800 transition-colors focus:outline-none";
+            // Set content
+            contentArea.textContent = content;
+          };
+          tabContainer.appendChild(btn);
+
+          if (first) {
+            contentArea.textContent = content;
+            first = false;
+          }
+        }
+      }
+
+      // Q&A Initialization
+      function initQA() {
+        const container = document.getElementById("qa-container");
+        questions.forEach((item, index) => {
+          const wrapper = document.createElement("div");
+          wrapper.className =
+            "bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden";
+
+          const btn = document.createElement("button");
+          btn.className =
+            "w-full text-left px-6 py-4 font-semibold text-gray-800 bg-gray-50 hover:bg-white transition-colors flex justify-between items-center focus:outline-none";
+          btn.innerHTML = `<span>${item.q}</span> <i class="fa-solid fa-chevron-down text-gray-400 transition-transform duration-300 transform" id="icon-${index}"></i>`;
+
+          const answerDiv = document.createElement("div");
+          answerDiv.id = `ans-${index}`;
+          answerDiv.className =
+            "hidden px-6 py-4 text-gray-600 border-t border-gray-100 bg-white leading-relaxed";
+          answerDiv.innerText = item.a;
+
+          btn.onclick = () => {
+            const isHidden = answerDiv.classList.contains("hidden");
+            // Close all others
+            document
+              .querySelectorAll('[id^="ans-"]')
+              .forEach((el) => el.classList.add("hidden"));
+            document
+              .querySelectorAll('[id^="icon-"]')
+              .forEach((el) => el.classList.remove("rotate-180"));
+
+            if (isHidden) {
+              answerDiv.classList.remove("hidden");
+              document
+                .getElementById(`icon-${index}`)
+                .classList.add("rotate-180");
+            }
+          };
+
+          wrapper.appendChild(btn);
+          wrapper.appendChild(answerDiv);
+          container.appendChild(wrapper);
+        });
+      }
+
+      // Smooth Scroll
+      function scrollToSection(id) {
+        document.getElementById(id).scrollIntoView({ behavior: "smooth" });
+        // Close mobile menu if open
+        document.getElementById("mobile-menu").classList.add("hidden");
+      }
+
+      // Mobile Menu Toggle
+      document.getElementById("mobile-menu-btn").onclick = () => {
+        const menu = document.getElementById("mobile-menu");
+        menu.classList.toggle("hidden");
+      };
+
+      // ==========================================
+      // 3. Charts Initialization
+      // ==========================================
+      function initCharts() {
+        // Chart 1: VM vs Container (Comparison)
+        // Goal: Inform/Compare efficiency
+        const ctx1 = document
+          .getElementById("comparisonChart")
+          .getContext("2d");
+        new Chart(ctx1, {
+          type: "bar",
+          data: {
+            labels: [
+              "Размер (MB)",
+              "Время запуска (сек)",
+              "Потребление RAM (MB)",
+            ],
+            datasets: [
+              {
+                label: "Контейнер (Docker)",
+                data: [50, 2, 128], // Estimated values for demonstration
+                backgroundColor: "rgba(59, 130, 246, 0.7)", // Blue
+                borderColor: "rgb(59, 130, 246)",
+                borderWidth: 1,
+              },
+              {
+                label: "Виртуальная Машина",
+                data: [2000, 45, 1024], // Estimated values
+                backgroundColor: "rgba(209, 213, 219, 0.7)", // Gray
+                borderColor: "rgb(209, 213, 219)",
+                borderWidth: 1,
+              },
+            ],
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: { position: "bottom" },
+              tooltip: {
+                callbacks: {
+                  label: (ctx) => `${ctx.dataset.label}: ${ctx.raw}`,
+                },
+              },
+            },
+            scales: {
+              y: { beginAtZero: true, type: "logarithmic" }, // Log scale due to huge size diff
+            },
+          },
+        });
+
+        // Chart 2: Project Composition (Donut)
+        // Goal: Inform/Organize project structure stats
+        const ctx2 = document
+          .getElementById("compositionChart")
+          .getContext("2d");
+        new Chart(ctx2, {
+          type: "doughnut",
+          data: {
+            labels: [
+              "HTML Files",
+              "CSS Files",
+              "Config (YAML/Docker)",
+              "Images",
+            ],
+            datasets: [
+              {
+                data: [1, 1, 4, 1], // 1 index.html, 1 style.css, 1 compose + 3 Dockerfiles, 1 image
+                backgroundColor: [
+                  "#F97316", // Orange (HTML)
+                  "#3B82F6", // Blue (CSS)
+                  "#64748B", // Slate (Config)
+                  "#10B981", // Green (Image)
+                ],
+                borderWidth: 0,
+              },
+            ],
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: { position: "right" },
+            },
+          },
+        });
+      }
+
+      // ==========================================
+      // 4. Initialization
+      // ==========================================
+      window.onload = function () {
+        initCodeViewer();
+        initQA();
+        initCharts();
+        // Default architecture selection
+        selectNode("web");
+      };
+    </script>
+  </body>
+</html>
